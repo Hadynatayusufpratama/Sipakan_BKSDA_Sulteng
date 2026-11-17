@@ -94,6 +94,26 @@
                         </div>
                     </div>
 
+                    <section id="qr-sticker-{{ $item->id }}" class="qr-sticker space-y-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3">
+                    <div class="flex items-center gap-3">
+                        <div
+                            id="qr-code-{{ $item->id }}"
+                            data-qr-payload="{{ $qrPayloads[$item->id] }}"
+                            class="flex h-32 w-32 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white p-2"
+                            aria-label="QR checkpoint {{ $item->nama_satwa }}"
+                        ></div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">QR Checkpoint Kandang</p>
+                            <h4 class="mt-1 truncate text-sm font-bold text-slate-900">{{ $item->nama_satwa }}</h4>
+                            <p class="mt-1 text-xs text-slate-600">Kandang {{ $item->kandang }}</p>
+                            <p class="mt-1 text-[10px] text-slate-500">ID Satwa #{{ $item->id }}</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="printQrSticker('qr-sticker-{{ $item->id }}')" class="no-print inline-flex w-full items-center justify-center rounded-xl bg-emerald-800 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-600/20">
+                        Cetak QR
+                    </button>
+                    </section>
+
                     <details class="border-t border-slate-100 pt-3">
                         <summary class="cursor-pointer text-xs font-semibold text-emerald-800">Ubah data satwa</summary>
                         <form action="{{ route('satwa.update', $item) }}" method="POST" class="mt-3 space-y-3">
@@ -145,4 +165,71 @@
     </div>
 
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    document.querySelectorAll('[data-qr-payload]').forEach((container) => {
+        if (typeof QRCode === 'undefined') {
+            container.textContent = 'QR tidak dapat dimuat';
+            return;
+        }
+
+        new QRCode(container, {
+            text: container.dataset.qrPayload,
+            width: 112,
+            height: 112,
+            colorDark: '#022c22',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M,
+        });
+    });
+
+    function printQrSticker(stickerId) {
+        const sticker = document.getElementById(stickerId);
+        if (!sticker) {
+            return;
+        }
+
+        document.querySelectorAll('.qr-print-active').forEach((element) => {
+            element.classList.remove('qr-print-active');
+        });
+        sticker.classList.add('qr-print-active');
+        document.body.classList.add('printing-qr');
+        window.print();
+        document.body.classList.remove('printing-qr');
+        sticker.classList.remove('qr-print-active');
+    }
+</script>
+<style>
+    @media print {
+        @page {
+            margin: 12mm;
+        }
+
+        body.printing-qr * {
+            visibility: hidden !important;
+        }
+
+        body.printing-qr .qr-print-active,
+        body.printing-qr .qr-print-active * {
+            visibility: visible !important;
+        }
+
+        body.printing-qr .qr-print-active {
+            position: fixed !important;
+            inset: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            border: 0 !important;
+            background: #fff !important;
+            box-shadow: none !important;
+        }
+
+        body.printing-qr .qr-print-active .no-print {
+            display: none !important;
+        }
+    }
+</style>
 @endsection

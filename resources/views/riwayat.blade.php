@@ -33,18 +33,21 @@
                         <p class="mt-1 text-xs font-semibold text-slate-700">{{ $item->updated_at?->format('d M Y, H:i') ?? '-' }}</p>
                     </div>
                 </div>
-
-                <div class="flex-1 border-t border-slate-100 pt-3">
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Catatan observasi</p>
-                    <p class="mt-1 whitespace-pre-line text-xs leading-5 text-slate-700">{{ $item->catatan_petugas ?: 'Tidak ada catatan.' }}</p>
+                <div class="flex flex-col gap-3 border-t border-slate-100 pt-3 min-[390px]:flex-row min-[390px]:items-start">
+                    <div class="min-w-0 flex-1 space-y-2">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Catatan observasi</p>
+                            <p class="mt-1 whitespace-pre-line text-xs leading-5 text-slate-700">{{ $item->catatan_petugas ?: 'Tidak ada catatan.' }}</p>
+                        </div>
+                        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-800">✓ Selesai Dilaporkan</span>
+                    </div>
+                    @if($item->bukti_foto)
+                        <a href="{{ asset('storage/' . $item->bukti_foto) }}" target="_blank" rel="noopener noreferrer" class="group inline-flex w-fit shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white p-2 text-xs font-semibold text-emerald-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600/30">
+                            <img src="{{ asset('storage/' . $item->bukti_foto) }}" alt="Bukti foto pakan {{ $item->satwa?->nama_satwa ?? '' }}" loading="lazy" class="h-16 w-16 rounded-lg border border-slate-200 object-cover">
+                            <span class="max-w-24 leading-4 group-hover:underline">Lihat bukti foto</span>
+                        </a>
+                    @endif
                 </div>
-
-                @if($item->bukti_foto)
-                    <a href="{{ Storage::disk('public')->url($item->bukti_foto) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50">
-                        <img src="{{ Storage::disk('public')->url($item->bukti_foto) }}" alt="Bukti foto pakan {{ $item->satwa?->nama_satwa ?? '' }}" loading="lazy" class="h-12 w-12 rounded-lg border border-slate-200 object-cover">
-                        Lihat bukti foto
-                    </a>
-                @endif
             </article>
         @empty
             <div class="rounded-2xl border border-slate-200/80 bg-white px-6 py-14 text-center shadow-sm">

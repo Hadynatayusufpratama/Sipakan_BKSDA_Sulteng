@@ -12,7 +12,7 @@
             <div>
                 <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300">Pelaporan & analitik</p>
                 <h1 class="mt-1 text-lg font-black">Data Warehouse &amp; IoT</h1>
-                <p class="mt-1 text-xs leading-5 text-emerald-100/75">Ringkasan laporan pakan tersimpan dan status integrasi sensor.</p>
+                <p class="mt-1 text-xs leading-5 text-emerald-100/75">Ringkasan tugas, penyelesaian, petugas aktif, dan tren pemberian pakan.</p>
             </div>
         </div>
     </div>
@@ -20,26 +20,81 @@
     <!-- Statistik Agregat (Data Warehouse Metrics) -->
     <div class="grid grid-cols-2 gap-3">
         <div class="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total log DWH</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total tugas</span>
             <h2 class="mt-2 text-3xl font-black text-slate-900">{{ $totalJadwal }}</h2>
-            <span class="mt-1 block text-[10px] font-semibold text-emerald-700">Rekaman tersimpan</span>
+            <span class="mt-1 block text-[10px] font-semibold text-amber-700">{{ $jadwalPending }} menunggu</span>
         </div>
         <div class="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tugas selesai</span>
             <h2 class="mt-2 text-3xl font-black text-slate-900">{{ $jadwalSelesai }}</h2>
-            <span class="mt-1 block text-[10px] font-semibold text-emerald-700">Laporan diterima</span>
+            <span class="mt-1 block text-[10px] font-semibold text-emerald-700">dari {{ $totalJadwal }} tugas</span>
         </div>
         <div class="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Indeks kepatuhan</span>
             <h2 class="mt-2 text-3xl font-black text-emerald-700">{{ $persentaseKepatuhan }}%</h2>
-            <span class="mt-1 block text-[10px] font-semibold text-slate-500">Tugas selesai / total</span>
+            <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label="Persentase tugas selesai" aria-valuenow="{{ $persentaseKepatuhan }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="h-full rounded-full bg-emerald-500 transition-all" style="width: {{ $persentaseKepatuhan }}%"></div>
+            </div>
+            <span class="mt-2 block text-[10px] font-semibold text-slate-500">Tugas selesai / total</span>
         </div>
         <div class="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Status telemetri IoT</span>
-            <h2 class="mt-2 text-2xl font-black text-amber-600">Simulasi</h2>
-            <span class="mt-1 block text-[10px] font-semibold text-slate-500">Belum terhubung ke sensor</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Petugas aktif</span>
+            <h2 class="mt-2 text-3xl font-black text-slate-900">{{ $activePetugas }}</h2>
+            <span class="mt-1 block text-[10px] font-semibold text-emerald-700">Aktif &amp; terverifikasi</span>
         </div>
     </div>
+
+    <section class="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <h2 class="text-sm font-bold text-slate-900">Tren harian</h2>
+                <p class="mt-1 text-[10px] text-slate-500">Tingkat penyelesaian tugas setiap hari.</p>
+            </div>
+            <span class="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-800">7 hari</span>
+        </div>
+        <div class="space-y-3">
+            @foreach($dailyTrend as $trend)
+                <div>
+                    <div class="mb-1.5 flex items-center justify-between gap-2 text-[10px]">
+                        <span class="font-semibold text-slate-600">{{ $trend->label }}</span>
+                        <span class="text-right text-slate-500">
+                            <strong class="text-slate-700">{{ $trend->completed_tasks }}/{{ $trend->total_tasks }}</strong> selesai
+                            <span class="ml-1 font-bold text-emerald-700">{{ $trend->completion_rate }}%</span>
+                        </span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label="Penyelesaian tanggal {{ $trend->date }}" aria-valuenow="{{ $trend->completion_rate }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="h-full rounded-full bg-emerald-500 transition-all" style="width: {{ $trend->completion_rate }}%"></div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </section>
+
+    <section class="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <h2 class="text-sm font-bold text-slate-900">Tren mingguan</h2>
+                <p class="mt-1 text-[10px] text-slate-500">Rekap penyelesaian per minggu.</p>
+            </div>
+            <span class="shrink-0 rounded-full bg-sky-50 px-2.5 py-1 text-[10px] font-bold text-sky-800">8 minggu</span>
+        </div>
+        <div class="space-y-3">
+            @foreach($weeklyTrend as $trend)
+                <div>
+                    <div class="mb-1.5 flex items-center justify-between gap-2 text-[10px]">
+                        <span class="font-semibold text-slate-600">{{ $trend->label }}</span>
+                        <span class="text-right text-slate-500">
+                            <strong class="text-slate-700">{{ $trend->completed_tasks }}/{{ $trend->total_tasks }}</strong> selesai
+                            <span class="ml-1 font-bold text-emerald-700">{{ $trend->completion_rate }}%</span>
+                        </span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label="Penyelesaian minggu {{ $trend->label }}" aria-valuenow="{{ $trend->completion_rate }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="h-full rounded-full bg-sky-500 transition-all" style="width: {{ $trend->completion_rate }}%"></div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </section>
 
     <!-- Simulated IoT readings; no sensor telemetry source is configured yet. -->
     <div class="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">

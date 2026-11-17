@@ -82,7 +82,7 @@
             </nav>
         </div>
     @else
-        <div class="relative mx-auto flex min-h-screen w-full max-w-md flex-col bg-slate-50 pb-24 shadow-2xl">
+        <div class="relative mx-auto flex min-h-screen w-full max-w-md flex-col overflow-y-auto bg-slate-50 shadow-2xl">
             <header class="sticky top-0 z-40 border-b border-emerald-700/40 bg-gradient-to-r from-bksda-950 to-bksda-900 px-4 py-3 text-white shadow-lg">
                 <div class="flex items-center justify-between gap-2.5">
                     <div class="flex min-w-0 items-center gap-2.5">
@@ -105,7 +105,7 @@
                 </div>
             </header>
 
-            <main class="w-full flex-1 space-y-4 px-4 py-5">
+            <main class="w-full flex-1 space-y-4 px-4 py-5 pb-28">
                 @yield('content')
             </main>
         </div>
@@ -153,7 +153,7 @@
 
                 const refresh = () => {
                     window.setTimeout(() => {
-                        if (hasUnsavedChanges) {
+                        if (hasUnsavedChanges || window.sipakanPreventAutoRefresh) {
                             refresh();
                             return;
                         }

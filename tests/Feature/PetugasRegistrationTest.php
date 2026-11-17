@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class PetugasRegistrationTest extends TestCase
@@ -90,6 +92,49 @@ class PetugasRegistrationTest extends TestCase
         $this->actingAs($this->createUser('petugas'))
             ->get(route('admin.petugas.index'))
             ->assertForbidden();
+    }
+
+    public function test_admin_can_save_and_normalize_a_petugas_whatsapp_number(): void
+    {
+        $admin = $this->createUser('admin');
+        $petugas = $this->createUser('petugas');
+
+        $this->actingAs($admin)
+            ->patch(route('admin.petugas.phone', $petugas), [
+                'nomor_hp' => '0812-3456-7890',
+            ])
+            ->assertRedirect(route('admin.petugas.index'))
+            ->assertSessionHas('success');
+
+        $this->assertSame('6281234567890', $petugas->fresh()->nomor_hp);
+
+        $this->from(route('admin.petugas.index'))
+            ->patch(route('admin.petugas.phone', $petugas), [
+                'nomor_hp' => 'nomor-tidak-valid',
+                'phone_user_id' => $petugas->id,
+            ])
+            ->assertRedirect(route('admin.petugas.index'))
+            ->assertSessionHasErrors('nomor_hp');
+        $this->assertSame('6281234567890', $petugas->fresh()->nomor_hp);
+    }
+
+    public function test_phone_update_shows_migration_guidance_when_the_column_is_missing(): void
+    {
+        $admin = $this->createUser('admin');
+        $petugas = $this->createUser('petugas');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('nomor_hp');
+        });
+
+        $this->actingAs($admin)
+            ->from(route('admin.petugas.index'))
+            ->patch(route('admin.petugas.phone', $petugas), [
+                'nomor_hp' => '0812-3456-7890',
+            ])
+            ->assertRedirect(route('admin.petugas.index'))
+            ->assertSessionHasErrors([
+                'nomor_hp' => 'Kolom nomor HP belum tersedia. Jalankan php artisan migrate lalu coba lagi.',
+            ]);
     }
 
     public function test_inactive_petugas_cannot_access_their_dashboard(): void

@@ -14,6 +14,37 @@
         </div>
     </section>
 
+    @if($pendingTasksToday->isNotEmpty())
+        <section aria-labelledby="daily-task-notice" class="space-y-3 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm">
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-amber-800">Pengingat tugas hari ini</p>
+                <h2 id="daily-task-notice" class="mt-1 text-sm font-bold text-slate-900">Halo {{ auth()->user()->name }}, Anda memiliki tugas memberi makan satwa hari ini.</h2>
+                <p class="mt-1 text-xs leading-5 text-slate-600">Silakan lakukan scan QR di kandang untuk membuka formulir laporan.</p>
+            </div>
+            <ul class="space-y-2">
+                @foreach($pendingTasksToday as $pendingTask)
+                    <li class="flex items-center justify-between gap-3 rounded-xl border border-amber-100 bg-white px-3 py-2.5">
+                        <div class="min-w-0">
+                            <p class="truncate text-xs font-bold text-slate-800">{{ $pendingTask->satwa?->nama_satwa ?? 'Satwa' }}</p>
+                            <p class="truncate text-[10px] text-slate-500">Kandang {{ $pendingTask->satwa?->kandang ?? '-' }}</p>
+                        </div>
+                        <a href="#task-{{ $pendingTask->id }}" class="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-[10px] font-bold text-white transition hover:bg-amber-700">
+                            Scan QR
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @elseif($totalTugas > 0)
+        <div role="status" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800 shadow-sm">
+            ✓ Semua tugas hari ini sudah selesai.
+        </div>
+    @else
+        <div role="status" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-600 shadow-sm">
+            Belum ada penugasan hari ini.
+        </div>
+    @endif
+
     @if(session('success'))
         <div role="status" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800 shadow-sm">
             ✨ {{ session('success') }}
@@ -59,7 +90,7 @@
         </div>
 
         @forelse($jadwalTugas as $tugas)
-            <article class="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-lg shadow-slate-900/5">
+            <article id="task-{{ $tugas->id }}" class="scroll-mt-24 space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-lg shadow-slate-900/5">
                 <div class="flex justify-between items-start">
                     <div class="min-w-0 pr-2">
                         <span class="text-[10px] font-bold uppercase bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md border border-emerald-100">
@@ -72,6 +103,8 @@
                             Kandang: {{ $tugas->satwa?->kandang ?? '-' }}
                             <span aria-hidden="true">•</span>
                             Jumlah: {{ $tugas->satwa?->jumlah_ekor ?? '-' }} ekor
+                            <span aria-hidden="true">•</span>
+                            Tanggal tugas: {{ $tugas->tanggal_tugas }}
                         </p>
                     </div>
                     <span class="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full {{ $tugas->status === 'Selesai' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
@@ -80,6 +113,31 @@
                 </div>
 
                 @if($tugas->status === 'Pending')
+                    @php($checkpointAt = $checkpointScans[$tugas->id] ?? null)
+                    @if(!$checkpointAt)
+                        <section class="space-y-3 border-t border-slate-100 pt-3">
+                            <div>
+                                <p class="text-xs font-bold text-slate-800">Scan QR Kandang</p>
+                                <p class="mt-1 text-[10px] leading-4 text-slate-500">Pindai kode QR kandang untuk mencatat waktu kedatangan dan membuka formulir laporan.</p>
+                            </div>
+                            <button
+                                type="button"
+                                data-checkpoint-scan
+                                data-task-id="{{ $tugas->id }}"
+                                data-reader-id="qr-reader-{{ $tugas->id }}"
+                                data-status-id="qr-status-{{ $tugas->id }}"
+                                class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-800 px-4 py-3 text-xs font-bold text-white transition hover:bg-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-600/20"
+                            >
+                                Mulai Scan QR
+                            </button>
+                            <div id="qr-reader-{{ $tugas->id }}" class="hidden overflow-hidden rounded-xl"></div>
+                            <p id="qr-status-{{ $tugas->id }}" role="status" class="text-[10px] leading-4 text-slate-500">Kamera memerlukan izin browser dan koneksi HTTPS atau localhost.</p>
+                        </section>
+                    @else
+                        <div class="flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-800">
+                            <span aria-hidden="true">✓</span>
+                            <p>Checkpoint tercatat: <time datetime="{{ $checkpointAt->toIso8601String() }}" class="font-bold">{{ $checkpointAt->format('d/m/Y H:i:s') }}</time></p>
+                        </div>
                     <form action="{{ route('petugas.laporan', $tugas->id) }}" method="POST" enctype="multipart/form-data" class="pt-3 border-t border-slate-100 space-y-3">
                         @csrf
                         <div>
@@ -100,13 +158,17 @@
                             Kirim Laporan & Tandai Selesai
                         </button>
                     </form>
+                    @endif
                 @else
-                    <div class="pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-2">
-                        <p><span class="font-semibold">Catatan:</span> {{ $tugas->catatan_petugas ?: 'Tidak ada catatan.' }}</p>
+                    <div class="flex flex-col gap-3 border-t border-slate-100 pt-3 min-[390px]:flex-row min-[390px]:items-start">
+                        <div class="min-w-0 flex-1 space-y-2 text-xs text-slate-600">
+                            <p class="whitespace-pre-line"><span class="font-semibold">Catatan:</span> {{ $tugas->catatan_petugas ?: 'Tidak ada catatan.' }}</p>
+                            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-800">✓ Selesai Dilaporkan</span>
+                        </div>
                         @if($tugas->bukti_foto)
-                            <a href="{{ Storage::disk('public')->url($tugas->bukti_foto) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-emerald-800 font-semibold">
-                                <img src="{{ Storage::disk('public')->url($tugas->bukti_foto) }}" alt="Bukti foto pakan {{ $tugas->satwa?->nama_satwa ?? '' }}" class="w-16 h-16 object-cover rounded-xl border border-slate-200">
-                                Lihat bukti foto
+                            <a href="{{ asset('storage/' . $tugas->bukti_foto) }}" target="_blank" rel="noopener noreferrer" class="group inline-flex w-fit shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white p-2 text-xs font-semibold text-emerald-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600/30">
+                                <img src="{{ asset('storage/' . $tugas->bukti_foto) }}" alt="Bukti foto pakan {{ $tugas->satwa?->nama_satwa ?? '' }}" loading="lazy" class="h-16 w-16 rounded-lg border border-slate-200 object-cover">
+                                <span class="max-w-24 leading-4 group-hover:underline">Lihat bukti foto</span>
                             </a>
                         @endif
                     </div>
@@ -123,4 +185,134 @@
     </div>
 
 </div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+    const checkpointEndpoint = @json(route('petugas.checkpoint'));
+    const checkpointCsrfToken = @json(csrf_token());
+
+    document.querySelectorAll('[data-checkpoint-scan]').forEach((button) => {
+        const reader = document.getElementById(button.dataset.readerId);
+        const status = document.getElementById(button.dataset.statusId);
+        let scanner = null;
+        let scanning = false;
+        let processing = false;
+
+        const closeScanner = async () => {
+            if (!scanner) {
+                window.sipakanPreventAutoRefresh = false;
+                return;
+            }
+
+            if (scanning) {
+                await scanner.stop();
+            }
+
+            await scanner.clear();
+            scanner = null;
+            scanning = false;
+            window.sipakanPreventAutoRefresh = false;
+            document.querySelectorAll('[data-checkpoint-scan]').forEach((otherButton) => {
+                otherButton.disabled = false;
+            });
+            reader.classList.add('hidden');
+        };
+
+        button.addEventListener('click', async () => {
+            if (scanning) {
+                await closeScanner();
+                status.textContent = 'Pemindai ditutup.';
+                button.textContent = 'Mulai Scan QR';
+                return;
+            }
+
+            if (typeof Html5Qrcode === 'undefined') {
+                status.textContent = 'Library pemindai tidak dapat dimuat. Periksa koneksi internet lalu coba lagi.';
+                return;
+            }
+
+            reader.classList.remove('hidden');
+            status.textContent = 'Mengaktifkan kamera...';
+            button.disabled = true;
+            window.sipakanPreventAutoRefresh = true;
+            document.querySelectorAll('[data-checkpoint-scan]').forEach((otherButton) => {
+                if (otherButton !== button) {
+                    otherButton.disabled = true;
+                }
+            });
+
+            try {
+                scanner = new Html5Qrcode(reader.id);
+                await scanner.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: { width: 220, height: 220 } },
+                    async (qrPayload) => {
+                        if (processing) {
+                            return;
+                        }
+
+                        processing = true;
+                        status.textContent = 'QR terbaca. Memverifikasi checkpoint...';
+
+                        try {
+                            const response = await fetch(checkpointEndpoint, {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': checkpointCsrfToken,
+                                },
+                                body: JSON.stringify({
+                                    task_id: button.dataset.taskId,
+                                    qr_payload: qrPayload,
+                                }),
+                            });
+                            const result = await response.json();
+
+                            if (!response.ok) {
+                                throw new Error(result.message || 'QR tidak cocok dengan tugas hari ini.');
+                            }
+
+                            await closeScanner();
+                            status.textContent = `Checkpoint tercatat pada ${result.scanned_at_display}. Membuka formulir laporan...`;
+                            button.disabled = true;
+                            button.textContent = 'Checkpoint Tercatat';
+                            window.setTimeout(() => window.location.reload(), 700);
+                        } catch (error) {
+                            await closeScanner();
+                            status.textContent = error.message || 'Checkpoint gagal diverifikasi.';
+                            button.disabled = false;
+                            button.textContent = 'Scan Ulang QR';
+                            processing = false;
+                        }
+                    },
+                    () => {}
+                );
+
+                scanning = true;
+                button.disabled = false;
+                button.textContent = 'Tutup Pemindai';
+                status.textContent = 'Arahkan kamera ke QR checkpoint kandang.';
+            } catch (error) {
+                if (scanner) {
+                    if (scanner.isScanning) {
+                        await scanner.stop();
+                    }
+                    await scanner.clear();
+                    scanner = null;
+                    scanning = false;
+                }
+
+                window.sipakanPreventAutoRefresh = false;
+                document.querySelectorAll('[data-checkpoint-scan]').forEach((otherButton) => {
+                    otherButton.disabled = false;
+                });
+                reader.classList.add('hidden');
+                status.textContent = `Kamera tidak dapat dibuka: ${error.message}`;
+                button.disabled = false;
+                button.textContent = 'Coba Scan Lagi';
+            }
+        });
+    });
+</script>
 @endsection

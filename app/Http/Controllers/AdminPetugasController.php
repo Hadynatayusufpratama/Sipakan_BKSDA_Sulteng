@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\WhatsAppLinkGenerator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 class AdminPetugasController extends Controller
 {
@@ -47,5 +50,36 @@ class AdminPetugasController extends Controller
                 : ($isAwaitingApproval
                     ? 'Akun petugas berhasil disetujui dan diaktifkan.'
                     : 'Akun petugas berhasil diaktifkan kembali.'));
+    }
+
+    public function updatePhone(Request $request, User $user, WhatsAppLinkGenerator $whatsAppLinkGenerator)
+    {
+        abort_unless($user->role === 'petugas', 404);
+
+        if (! Schema::hasColumn('users', 'nomor_hp')) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors([
+                    'nomor_hp' => 'Kolom nomor HP belum tersedia. Jalankan php artisan migrate lalu coba lagi.',
+                ]);
+        }
+
+        $validated = $request->validate([
+            'nomor_hp' => ['required', 'string', 'max:32', 'regex:/^\+?[0-9\s().-]+$/'],
+        ]);
+        $nomorHp = $whatsAppLinkGenerator->normalizePhone($validated['nomor_hp']);
+
+        if ($nomorHp === null) {
+            throw ValidationException::withMessages([
+                'nomor_hp' => 'Nomor HP harus memiliki 8 sampai 15 digit setelah normalisasi.',
+            ]);
+        }
+
+        $user->update(['nomor_hp' => $nomorHp]);
+
+        return redirect()
+            ->route('admin.petugas.index')
+            ->with('success', 'Nomor WhatsApp Petugas berhasil disimpan.');
     }
 }

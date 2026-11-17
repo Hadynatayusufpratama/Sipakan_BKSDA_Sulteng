@@ -59,6 +59,26 @@
                         <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Tanggal daftar</p>
                         <p class="mt-1 text-xs font-semibold text-slate-700">{{ $user->created_at->format('d/m/Y') }}</p>
                     </div>
+                    <form action="{{ route('admin.petugas.phone', $user) }}" method="POST" class="mt-3 space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="phone_user_id" value="{{ $user->id }}">
+                        <label for="nomor-hp-{{ $user->id }}" class="block text-[10px] font-semibold text-slate-700">Nomor WhatsApp</label>
+                        <input
+                            id="nomor-hp-{{ $user->id }}"
+                            type="tel"
+                            name="nomor_hp"
+                            value="{{ old('phone_user_id') == $user->id ? old('nomor_hp', $user->nomor_hp) : $user->nomor_hp }}"
+                            placeholder="08xx atau +62..."
+                            maxlength="32"
+                            required
+                            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                        >
+                        <p class="text-[10px] leading-4 text-slate-500">Nomor lokal akan dinormalisasi ke format internasional untuk tautan WhatsApp.</p>
+                        <button type="submit" class="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[10px] font-bold text-emerald-800 transition hover:bg-emerald-50">
+                            Simpan Nomor WhatsApp
+                        </button>
+                    </form>
                     <form action="{{ route('admin.petugas.status', $user) }}" method="POST" class="mt-3">
                         @csrf
                         @method('PATCH')

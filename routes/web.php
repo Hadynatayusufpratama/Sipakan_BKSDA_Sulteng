@@ -32,6 +32,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/dwh-analitik', [SatwaController::class, 'dwhIndex'])->name('dwh.index');
     Route::get('/admin/petugas', [AdminPetugasController::class, 'index'])->name('admin.petugas.index');
     Route::patch('/admin/petugas/{user}/status', [AdminPetugasController::class, 'updateStatus'])->name('admin.petugas.status');
+    Route::patch('/admin/petugas/{user}/phone', [AdminPetugasController::class, 'updatePhone'])->name('admin.petugas.phone');
 });
 
 Route::middleware(['auth', 'role:petugas'])->prefix('petugas')->name('petugas.')->group(function () {
@@ -39,5 +40,6 @@ Route::middleware(['auth', 'role:petugas'])->prefix('petugas')->name('petugas.')
     Route::get('/satwa', [PetugasController::class, 'satwaIndex'])->name('satwa');
     Route::get('/riwayat', [PetugasController::class, 'riwayat'])->name('riwayat');
     Route::get('/profil', [PetugasController::class, 'profil'])->name('profil');
+    Route::post('/checkpoint', [PetugasController::class, 'checkpoint'])->middleware('throttle:30,1')->name('checkpoint');
     Route::post('/laporan/{id}', [PetugasController::class, 'updateLaporan'])->name('laporan');
 });

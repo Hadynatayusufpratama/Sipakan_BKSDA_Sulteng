@@ -11,9 +11,13 @@
 
 The application uses session-based authentication. Run `php artisan migrate` to add the `role` field to `users` and the nullable officer assignment to `jadwal_pakan`. There is no public registration or default account: provision accounts through your trusted administrative process, set their role to `admin` or `petugas`, and store passwords using Laravel's hasher. New accounts default to the least-privileged `petugas` role.
 
-Existing jadwal records have no officer assignment after this migration. Once Petugas accounts are provisioned, run the Admin randomizer to generate today's assigned tasks. Randomizing again replaces today's schedules and their reports.
+Existing jadwal records have no officer assignment after this migration. Only active satwa and active, Admin-approved Petugas accounts are eligible for assignment. Run the Admin randomizer to generate today's tasks; rerunning it replaces pending tasks while preserving completed tasks and reports.
 
 Uploaded proof photos use Laravel's `public` disk. Run `php artisan storage:link` in deployments that serve images through the local public storage symlink.
+
+The QR checkpoint feature stores the verified scan time in the authenticated Petugas session and updates the task's standard `updated_at` timestamp; no checkpoint-specific database column or migration is required. The session gate must be present to submit the report, and `updated_at` will advance again when the report is saved. Admin QR stickers use signatures derived from `APP_KEY`, so regenerate and reprint stickers after rotating the application key. Petugas camera scanning requires browser camera permission, HTTPS (or localhost), and access to the pinned scanner CDN. The checkpoint records a timestamp only; it does not collect GPS coordinates.
+
+WhatsApp reminders are click-to-send links; the application does not send messages automatically. Run `php artisan migrate` to add or repair the nullable `nomor_hp` field, then enter each Petugas number in Admin > Kelola Petugas. Indonesian local numbers beginning with `08` are normalized to `62` when saved. After scheduling, Admin can open the prefilled reminder from the distribution banner or the pending task card.
 
 ## About Laravel
 
